@@ -84,7 +84,7 @@ exports.addSportPerson = async (req, res) => {
 
         // บันทึกข้อมูลผู้เล่นใหม่ลงฐานข้อมูลในตาราง sport_person
         const [result] = await db.query(
-            'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?)',
             [
                 sport_person_id,
                 person_red,
