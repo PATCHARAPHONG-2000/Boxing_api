@@ -3,6 +3,7 @@ const cors = require('cors');
 const { readdirSync } = require('fs');
 const fetch = require('node-fetch');  // ใช้สำหรับเรียก API
 const WebSocket = require('ws'); // เพิ่ม WebSocket
+const path = require('path'); // ย้ายไปที่บนสุดเพื่อแก้ไขข้อผิดพลาด 'path is not defined'
 const app = express();
 
 // Middleware
@@ -20,7 +21,7 @@ readdirSync('./routes').forEach((file) => {
 
 // Default route
 app.get('/', (req, res) => {
-    res.render('home');
+    res.sendFile(path.join(__dirname, 'public', 'home.html'));  // ส่งไฟล์ home.html ที่อยู่ในโฟลเดอร์ public
 });
 
 // Start Server
@@ -53,14 +54,11 @@ wss.on('connection', (ws) => {
         try {
             // เรียกข้อมูล API
             const dataScoreweb = await fetchApiData('http://localhost:10000/api/dataScoreRoutes');
-            // const dataScoreapp = await fetchApiData('http://192.168.1.33:10000/api/dataScoreRoutes');
             const dataPersonweb = await fetchApiData('http://localhost:10000/api/sportPersonRoutes');
-            // const dataPersonapp = await fetchApiData('http://192.168.1.33:10000/api/sportPersonRoutes');
             const dataMatchweb = await fetchApiData('http://localhost:10000/api/matchRoutes');
             const loginweb = await fetchApiData('http://localhost:10000/api/loginRoutes');
-            // const loginapp = await fetchApiData('http://192.168.1.33:10000/api/loginRoutes');
 
-            if (!dataScoreweb || !dataPersonweb || !dataMatchweb || !loginweb ) {
+            if (!dataScoreweb || !dataPersonweb || !dataMatchweb || !loginweb) {
                 throw new Error('One or more API responses are invalid.');
             }
 
