@@ -2,6 +2,20 @@ const db = require('../config/db');
 const fs = require('fs').promises;
 const path = require('path');
 
+
+// ฟังก์ชันอัพโหลดไฟล์ไปยัง S3
+const uploadToS3 = (file) => {
+    const fileStream = fs.createReadStream(file.path); // เปิดไฟล์จาก path ที่อยู่ในเซิร์ฟเวอร์
+    const uploadParams = {
+        Bucket: 'YOUR_BUCKET_NAME', // เปลี่ยนเป็นชื่อบัคเก็ตของคุณ
+        Key: `uploads/${Date.now()}_${file.originalname}`, // ตั้งชื่อไฟล์ใน S3
+        Body: fileStream,
+        ContentType: file.mimetype, // ประเภทไฟล์
+        ACL: 'public-read' // ทำให้ไฟล์สามารถเข้าถึงได้จากภายนอก
+    };
+    return s3.upload(uploadParams).promise(); // ใช้การอัพโหลดแบบ Promise
+};
+
 // ดึงข้อมูลทั้งหมด
 exports.getAllSportPersons = async (req, res) => {
     try {
@@ -28,10 +42,81 @@ exports.getAllSportPersons = async (req, res) => {
 
 
 // เพิ่มข้อมูลใหม่
+// exports.addSportPerson = async (req, res) => {
+//     const { person_red, person_blue, Match_Type } = req.body;
+//     const image_red = req.files['image_red'] ? req.files['image_red'][0].filename : null;
+//     const image_blue = req.files['image_blue'] ? req.files['image_blue'][0].filename : null;
+
+//     try {
+//         // ดึงข้อมูลชื่อ match จากฐานข้อมูล
+//         const [matchData] = await db.query(
+//             'SELECT name_match FROM data_match WHERE id = ?',
+//             [1] // กำหนด id ที่ต้องการดึง (ตัวอย่างนี้ใช้ id = 1)
+//         );
+
+//         if (!matchData || matchData.length === 0) {
+//             return res.status(404).json({
+//                 status: false,
+//                 message: 'Match data not found'
+//             });
+//         }
+
+//         const name_match = matchData[0].name_match; // ดึงค่า name_match จากผลลัพธ์
+
+//         // สร้าง sport_person_id แบบ TKS001, TKS002, ...
+//         let sport_person_id;
+//         let isUnique = false;
+
+//         // เช็คจนกว่า sport_person_id จะไม่ซ้ำ
+//         while (!isUnique) {
+//             // คำนวณจำนวนผู้เล่นทั้งหมดใน sport_person เพื่อเพิ่มหมายเลข
+//             const [existingPersons] = await db.query(
+//                 'SELECT COUNT(*) AS count FROM sport_person'
+//             );
+
+//             // สร้าง sport_person_id โดยการเพิ่มหมายเลขใหม่
+//             sport_person_id = `TKS${(existingPersons[0].count + 1).toString().padStart(3, '0')}`;
+
+//             // ตรวจสอบว่ามี sport_person_id นี้ในฐานข้อมูลหรือไม่
+//             const [existingSportPerson] = await db.query(
+//                 'SELECT * FROM sport_person WHERE sport_person_id = ?',
+//                 [sport_person_id]
+//             );
+
+//             if (existingSportPerson.length === 0) {
+//                 // ถ้าไม่มีการใช้ sport_person_id นี้แล้ว, อนุญาตให้บันทึกข้อมูล
+//                 isUnique = true;
+//             }
+//         }
+
+//         // บันทึกข้อมูลผู้เล่นใหม่ลงฐานข้อมูลในตาราง sport_person
+//         const [result] = await db.query(
+//             'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?)',
+//             [sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Match_Type]
+//         );
+
+//         // บันทึกข้อมูลในตาราง data_score โดยใช้ sport_person_id ที่ได้มา
+//         await db.query(
+//             'INSERT INTO data_score (sport_person_id) VALUES (?)',
+//             [sport_person_id] // กำหนดคะแนนเริ่มต้นเป็น 0 หรือค่าที่ต้องการ
+//         );
+
+//         res.json({
+//             status: true,
+//             message: 'Data inserted successfully',
+//             insertedId: result.insertId,
+//             sport_person_id
+//         });
+//     } catch (err) {
+//         console.error(err);
+//         res.status(500).json({ status: false, message: 'Failed to insert data' });
+//     }
+// };
+
 exports.addSportPerson = async (req, res) => {
     const { person_red, person_blue, Match_Type } = req.body;
-    const image_red = req.files['image_red'] ? req.files['image_red'][0].filename : null;
-    const image_blue = req.files['image_blue'] ? req.files['image_blue'][0].filename : null;
+    const image_red = req.files['image_red'] ? req.files['image_red'][0] : null;
+    const image_blue = req.files['image_blue'] ? req.files['image_blue'][0] : null;
 
     try {
         // ดึงข้อมูลชื่อ match จากฐานข้อมูล
@@ -70,21 +155,32 @@ exports.addSportPerson = async (req, res) => {
             );
 
             if (existingSportPerson.length === 0) {
-                // ถ้าไม่มีการใช้ sport_person_id นี้แล้ว, อนุญาตให้บันทึกข้อมูล
                 isUnique = true;
             }
         }
 
+        // อัพโหลดรูปภาพไปยัง S3 และเก็บ URL
+        const image_red_url = image_red ? await uploadToS3(image_red) : null;
+        const image_blue_url = image_blue ? await uploadToS3(image_blue) : null;
+
         // บันทึกข้อมูลผู้เล่นใหม่ลงฐานข้อมูลในตาราง sport_person
         const [result] = await db.query(
             'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Match_Type]
+            [
+                sport_person_id,
+                person_red,
+                person_blue,
+                image_red_url ? image_red_url.Location : null, // URL ของภาพจาก S3
+                image_blue_url ? image_blue_url.Location : null, // URL ของภาพจาก S3
+                name_match,
+                Match_Type
+            ]
         );
 
         // บันทึกข้อมูลในตาราง data_score โดยใช้ sport_person_id ที่ได้มา
         await db.query(
             'INSERT INTO data_score (sport_person_id) VALUES (?)',
-            [sport_person_id] // กำหนดคะแนนเริ่มต้นเป็น 0 หรือค่าที่ต้องการ
+            [sport_person_id]
         );
 
         res.json({
@@ -98,7 +194,6 @@ exports.addSportPerson = async (req, res) => {
         res.status(500).json({ status: false, message: 'Failed to insert data' });
     }
 };
-
 
 // อัปเดตข้อมูล
 exports.updateSportPerson = async (req, res) => {
