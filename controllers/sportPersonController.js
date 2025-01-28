@@ -1,36 +1,10 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const db = require('../config/db');
 const fs = require('fs');  // ใช้ fs ธรรมดา
-const path = require('path');
 
-const s3 = new S3Client({
-    region: process.env.AWS_REGION,
-    credentials: {
-        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-    }
-});
-
-const uploadToS3 = async (file) => {
-    // ใช้ fs.createReadStream() จาก fs ธรรมดา
-    const fileStream = fs.createReadStream(file.path);
-
-    const uploadParams = {
-        Bucket: 'TKS', // ชื่อบัคเก็ตของคุณ
-        Key: `uploads/${Date.now()}_${file.originalname}`, // ชื่อไฟล์ใน S3
-        Body: fileStream,
-        ContentType: file.mimetype, // ประเภทไฟล์
-        ACL: 'public-read' // ทำให้ไฟล์สามารถเข้าถึงได้จากภายนอก
-    };
-
-    try {
-        const command = new PutObjectCommand(uploadParams);
-        const data = await s3.send(command); // อัพโหลดไฟล์ไปยัง S3
-        return data; // คืนค่าผลลัพธ์จาก S3
-    } catch (err) {
-        console.error("Error uploading to S3", err);
-        throw err; // หากเกิดข้อผิดพลาดให้ throw ไปยังที่เรียกใช้งาน
-    }
+// ฟังก์ชันสำหรับแปลงไฟล์เป็น Base64
+const convertToBase64 = (filePath) => {
+    const fileData = fs.readFileSync(filePath); // อ่านไฟล์
+    return Buffer.from(fileData).toString('base64'); // แปลงเป็น Base64
 };
 
 // ดึงข้อมูลทั้งหมด
@@ -38,11 +12,11 @@ exports.getAllSportPersons = async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM sport_person');
         
-        // เพิ่ม URL สำหรับไฟล์รูปภาพโดยการรวม URL ของเซิร์ฟเวอร์
+        // แปลง Base64 ของภาพในฐานข้อมูลให้เป็น URL
         const data = rows.map(item => ({
             ...item,
-            image_red: item.image_red ? `https://boxing-api.onrender.com/uploads/${item.image_red}` : null,
-            image_blue: item.image_blue ? `https://boxing-api.onrender.com/uploads/${item.image_blue}` : null
+            image_red: item.image_red ? `data:${item.image_red_mime};base64,${item.image_red}` : null,
+            image_blue: item.image_blue ? `data:${item.image_blue_mime};base64,${item.image_blue}` : null
         }));
 
         res.json({
@@ -103,19 +77,25 @@ exports.addSportPerson = async (req, res) => {
             }
         }
 
-        // อัพโหลดรูปภาพไปยัง S3 และเก็บ URL
-        const image_red_url = image_red ? await uploadToS3(image_red) : null;
-        const image_blue_url = image_blue ? await uploadToS3(image_blue) : null;
+        // แปลงภาพเป็น Base64
+        const image_red_base64 = image_red ? convertToBase64(image_red.path) : null;
+        const image_blue_base64 = image_blue ? convertToBase64(image_blue.path) : null;
+
+        // หามิติของภาพ (Mime Type)
+        const image_red_mime = image_red ? image_red.mimetype : null;
+        const image_blue_mime = image_blue ? image_blue.mimetype : null;
 
         // บันทึกข้อมูลผู้เล่นใหม่ลงฐานข้อมูลในตาราง sport_person
         const [result] = await db.query(
-            'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, image_red_mime, image_blue_mime, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 sport_person_id,
                 person_red,
                 person_blue,
-                image_red_url ? image_red_url.Location : null, // URL ของภาพจาก S3
-                image_blue_url ? image_blue_url.Location : null, // URL ของภาพจาก S3
+                image_red_base64, // บันทึก Base64 ของรูปภาพ
+                image_blue_base64, // บันทึก Base64 ของรูปภาพ
+                image_red_mime,    // บันทึก Mime Type ของรูปภาพ
+                image_blue_mime,   // บันทึก Mime Type ของรูปภาพ
                 name_match,
                 Match_Type
             ]
@@ -138,6 +118,7 @@ exports.addSportPerson = async (req, res) => {
         res.status(500).json({ status: false, message: 'Failed to insert data' });
     }
 };
+
 
 // exports.addSportPerson = async (req, res) => {
 //     const { person_red, person_blue, Match_Type } = req.body;
