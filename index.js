@@ -18,6 +18,11 @@ readdirSync('./routes').forEach((file) => {
     console.log(`Route: /api/${file.split('.')[0]}`);
 });
 
+// Default route
+app.get('/', (req, res) => {
+    res.render('home');
+});
+
 // Start Server
 const PORT = process.env.PORT || 10000; // เปลี่ยนพอร์ตเป็น 10000
 const server = app.listen(PORT, '0.0.0.0', () => {
