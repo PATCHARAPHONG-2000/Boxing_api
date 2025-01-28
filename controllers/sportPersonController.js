@@ -94,8 +94,6 @@ exports.addSportPerson = async (req, res) => {
                 person_blue,
                 image_red_base64, // บันทึก Base64 ของรูปภาพ
                 image_blue_base64, // บันทึก Base64 ของรูปภาพ
-                image_red_mime,    // บันทึก Mime Type ของรูปภาพ
-                image_blue_mime,   // บันทึก Mime Type ของรูปภาพ
                 name_match,
                 Match_Type
             ]
