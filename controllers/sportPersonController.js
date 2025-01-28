@@ -10,8 +10,8 @@ exports.getAllSportPersons = async (req, res) => {
         
         // แปลง Base64 ของภาพในฐานข้อมูลให้เป็น URL
         const data = rows.map(item => {
-            const imageRedUrl = item.image_red ? `/images/${item.image_red}` : null;
-            const imageBlueUrl = item.image_blue ? `/images/${item.image_blue}` : null;
+            const imageRedUrl = item.image_red ? `${item.image_red}` : null;
+            const imageBlueUrl = item.image_blue ? `${item.image_blue}` : null;
 
             return {
                 ...item,
