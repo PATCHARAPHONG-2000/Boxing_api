@@ -1,29 +1,37 @@
-const AWS = require('aws-sdk');
+const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const db = require('../config/db');
 const fs = require('fs').promises;
 const path = require('path');
 
-// การตั้งค่า AWS S3
-const s3 = new AWS.S3({
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+const s3 = new S3Client({
     region: process.env.AWS_REGION,
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    }
 });
 
-// ฟังก์ชันอัพโหลดไฟล์ไปยัง S3
-const uploadToS3 = (file) => {
-    const fileStream = fs.createReadStream(file.path); // ใช้ path ของไฟล์ที่ถูกอัพโหลดในเซิร์ฟเวอร์
+const uploadToS3 = async (file) => {
+    const fileStream = fs.createReadStream(file.path);
 
     const uploadParams = {
-        Bucket: 'TKS', // เปลี่ยนเป็นชื่อบัคเก็ตของคุณ
-        Key: `uploads/${Date.now()}_${file.originalname}`, // ตั้งชื่อไฟล์ใน S3
+        Bucket: 'TKS',
+        Key: `uploads/${Date.now()}_${file.originalname}`,
         Body: fileStream,
-        ContentType: file.mimetype, // ประเภทไฟล์
-        ACL: 'public-read' // ทำให้ไฟล์สามารถเข้าถึงได้จากภายนอก
+        ContentType: file.mimetype,
+        ACL: 'public-read'
     };
 
-    return s3.upload(uploadParams).promise(); // ใช้การอัพโหลดแบบ Promise
+    try {
+        const command = new PutObjectCommand(uploadParams);
+        const data = await s3.send(command);
+        return data;
+    } catch (err) {
+        console.error("Error uploading to S3", err);
+        throw err;
+    }
 };
+
 
 // ดึงข้อมูลทั้งหมด
 exports.getAllSportPersons = async (req, res) => {
