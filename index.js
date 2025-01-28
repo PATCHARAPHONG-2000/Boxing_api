@@ -26,7 +26,7 @@ app.get('/', (req, res) => {
 // Start Server
 const PORT = process.env.PORT || 10000; // เปลี่ยนพอร์ตเป็น 10000
 const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running on http://127.0.0.1:${PORT}`);
+    console.log(`Server running on http://localhost:${PORT}`);
 });
 
 // WebSocket server
@@ -52,12 +52,12 @@ wss.on('connection', (ws) => {
     const interval = setInterval(async () => {
         try {
             // เรียกข้อมูล API
-            const dataScoreweb = await fetchApiData('http://127.0.0.1:10000/api/dataScoreRoutes');
+            const dataScoreweb = await fetchApiData('http://localhost:10000/api/dataScoreRoutes');
             // const dataScoreapp = await fetchApiData('http://192.168.1.33:10000/api/dataScoreRoutes');
-            const dataPersonweb = await fetchApiData('http://127.0.0.1:10000/api/sportPersonRoutes');
+            const dataPersonweb = await fetchApiData('http://localhost:10000/api/sportPersonRoutes');
             // const dataPersonapp = await fetchApiData('http://192.168.1.33:10000/api/sportPersonRoutes');
-            const dataMatchweb = await fetchApiData('http://127.0.0.1:10000/api/matchRoutes');
-            const loginweb = await fetchApiData('http://127.0.0.1:10000/api/loginRoutes');
+            const dataMatchweb = await fetchApiData('http://localhost:10000/api/matchRoutes');
+            const loginweb = await fetchApiData('http://localhost:10000/api/loginRoutes');
             // const loginapp = await fetchApiData('http://192.168.1.33:10000/api/loginRoutes');
 
             if (!dataScoreweb || !dataPersonweb || !dataMatchweb || !loginweb ) {

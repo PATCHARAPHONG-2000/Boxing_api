@@ -10,8 +10,8 @@ exports.getAllSportPersons = async (req, res) => {
         // เพิ่ม URL สำหรับไฟล์รูปภาพ
         const data = rows.map(item => ({
             ...item,
-            image_red: item.image_red ? `http://localhost:3000/uploads/${item.image_red}` : null,
-            image_blue: item.image_blue ? `http://localhost:3000/uploads/${item.image_blue}` : null
+            image_red: item.image_red ? `http://localhost:10000/uploads/${item.image_red}` : null,
+            image_blue: item.image_blue ? `http://localhost:10000/uploads/${item.image_blue}` : null
         }));
 
         res.json({
