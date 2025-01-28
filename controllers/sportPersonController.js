@@ -13,11 +13,16 @@ exports.getAllSportPersons = async (req, res) => {
         const [rows] = await db.query('SELECT * FROM sport_person');
         
         // แปลง Base64 ของภาพในฐานข้อมูลให้เป็น URL
-        const data = rows.map(item => ({
-            ...item,
-            image_red: item.image_red ? `data:${item.image_red_mime};base64,${item.image_red}` : null,
-            image_blue: item.image_blue ? `data:${item.image_blue_mime};base64,${item.image_blue}` : null
-        }));
+        const data = rows.map(item => {
+            const imageRedUrl = item.image_red ? `data:image/jpeg;base64,${item.image_red}` : null;
+            const imageBlueUrl = item.image_blue ? `data:image/jpeg;base64,${item.image_blue}` : null;
+
+            return {
+                ...item,
+                image_red: imageRedUrl,
+                image_blue: imageBlueUrl
+            };
+        });
 
         res.json({
             status: true,
@@ -29,6 +34,7 @@ exports.getAllSportPersons = async (req, res) => {
         res.status(500).json({ status: false, message: 'Failed to fetch data' });
     }
 };
+
 
 // เพิ่มข้อมูลใหม่
 exports.addSportPerson = async (req, res) => {
