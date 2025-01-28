@@ -1,6 +1,6 @@
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const db = require('../config/db');
-const fs = require('fs').promises;
+const fs = require('fs');  // ใช้ fs ธรรมดา
 const path = require('path');
 
 const s3 = new S3Client({
@@ -12,26 +12,26 @@ const s3 = new S3Client({
 });
 
 const uploadToS3 = async (file) => {
+    // ใช้ fs.createReadStream() จาก fs ธรรมดา
     const fileStream = fs.createReadStream(file.path);
 
     const uploadParams = {
-        Bucket: 'TKS',
-        Key: `uploads/${Date.now()}_${file.originalname}`,
+        Bucket: 'TKS', // ชื่อบัคเก็ตของคุณ
+        Key: `uploads/${Date.now()}_${file.originalname}`, // ชื่อไฟล์ใน S3
         Body: fileStream,
-        ContentType: file.mimetype,
-        ACL: 'public-read'
+        ContentType: file.mimetype, // ประเภทไฟล์
+        ACL: 'public-read' // ทำให้ไฟล์สามารถเข้าถึงได้จากภายนอก
     };
 
     try {
         const command = new PutObjectCommand(uploadParams);
-        const data = await s3.send(command);
-        return data;
+        const data = await s3.send(command); // อัพโหลดไฟล์ไปยัง S3
+        return data; // คืนค่าผลลัพธ์จาก S3
     } catch (err) {
         console.error("Error uploading to S3", err);
-        throw err;
+        throw err; // หากเกิดข้อผิดพลาดให้ throw ไปยังที่เรียกใช้งาน
     }
 };
-
 
 // ดึงข้อมูลทั้งหมด
 exports.getAllSportPersons = async (req, res) => {
