@@ -7,7 +7,7 @@ const path = require('path');
 const uploadToS3 = (file) => {
     const fileStream = fs.createReadStream(file.path); // เปิดไฟล์จาก path ที่อยู่ในเซิร์ฟเวอร์
     const uploadParams = {
-        Bucket: 'YOUR_BUCKET_NAME', // เปลี่ยนเป็นชื่อบัคเก็ตของคุณ
+        Bucket: 'TKS', // เปลี่ยนเป็นชื่อบัคเก็ตของคุณ
         Key: `uploads/${Date.now()}_${file.originalname}`, // ตั้งชื่อไฟล์ใน S3
         Body: fileStream,
         ContentType: file.mimetype, // ประเภทไฟล์
