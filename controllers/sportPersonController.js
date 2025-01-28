@@ -1,11 +1,7 @@
 const db = require('../config/db');
-const fs = require('fs');  // ใช้ fs ธรรมดา
-
-// ฟังก์ชันสำหรับแปลงไฟล์เป็น Base64
-const convertToBase64 = (filePath) => {
-    const fileData = fs.readFileSync(filePath); // อ่านไฟล์
-    return Buffer.from(fileData).toString('base64'); // แปลงเป็น Base64
-};
+const fs = require('fs');
+const multer = require('multer');
+const path = require('path');
 
 // ดึงข้อมูลทั้งหมด
 exports.getAllSportPersons = async (req, res) => {
@@ -14,8 +10,8 @@ exports.getAllSportPersons = async (req, res) => {
         
         // แปลง Base64 ของภาพในฐานข้อมูลให้เป็น URL
         const data = rows.map(item => {
-            const imageRedUrl = item.image_red ? `data:image/jpeg;base64,${item.image_red}` : null;
-            const imageBlueUrl = item.image_blue ? `data:image/jpeg;base64,${item.image_blue}` : null;
+            const imageRedUrl = item.image_red ? `/images/${item.image_red}` : null;
+            const imageBlueUrl = item.image_blue ? `/images/${item.image_blue}` : null;
 
             return {
                 ...item,
@@ -34,7 +30,6 @@ exports.getAllSportPersons = async (req, res) => {
         res.status(500).json({ status: false, message: 'Failed to fetch data' });
     }
 };
-
 
 // เพิ่มข้อมูลใหม่
 exports.addSportPerson = async (req, res) => {
@@ -83,10 +78,9 @@ exports.addSportPerson = async (req, res) => {
             }
         }
 
-        // แปลงภาพเป็น Base64
-        const image_red_base64 = image_red ? convertToBase64(image_red.path) : null;
-        const image_blue_base64 = image_blue ? convertToBase64(image_blue.path) : null;
-
+        // สร้าง URL สำหรับภาพที่อัปโหลด
+        const imageRedUrl = image_red ? `/images/${image_red.filename}` : null;
+        const imageBlueUrl = image_blue ? `/images/${image_blue.filename}` : null;
 
         // บันทึกข้อมูลผู้เล่นใหม่ลงฐานข้อมูลในตาราง sport_person
         const [result] = await db.query(
@@ -95,8 +89,8 @@ exports.addSportPerson = async (req, res) => {
                 sport_person_id,
                 person_red,
                 person_blue,
-                image_red_base64, // บันทึก Base64 ของรูปภาพ
-                image_blue_base64, // บันทึก Base64 ของรูปภาพ
+                imageRedUrl,  // เก็บ URL ของรูปภาพ
+                imageBlueUrl, // เก็บ URL ของรูปภาพ
                 name_match,
                 Match_Type
             ]
@@ -119,6 +113,7 @@ exports.addSportPerson = async (req, res) => {
         res.status(500).json({ status: false, message: 'Failed to insert data' });
     }
 };
+
 
 
 // exports.addSportPerson = async (req, res) => {
