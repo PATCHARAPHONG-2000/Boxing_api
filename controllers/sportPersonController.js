@@ -7,7 +7,7 @@ exports.getAllSportPersons = async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM sport_person');
         
-        // เพิ่ม URL สำหรับไฟล์รูปภาพ
+        // เพิ่ม URL สำหรับไฟล์รูปภาพโดยการรวม URL ของเซิร์ฟเวอร์
         const data = rows.map(item => ({
             ...item,
             image_red: item.image_red ? `https://boxing-api.onrender.com/uploads/${item.image_red}` : null,
@@ -24,6 +24,7 @@ exports.getAllSportPersons = async (req, res) => {
         res.status(500).json({ status: false, message: 'Failed to fetch data' });
     }
 };
+
 
 
 // เพิ่มข้อมูลใหม่
