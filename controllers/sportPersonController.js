@@ -81,13 +81,10 @@ exports.addSportPerson = async (req, res) => {
         const image_red_base64 = image_red ? convertToBase64(image_red.path) : null;
         const image_blue_base64 = image_blue ? convertToBase64(image_blue.path) : null;
 
-        // หามิติของภาพ (Mime Type)
-        const image_red_mime = image_red ? image_red.mimetype : null;
-        const image_blue_mime = image_blue ? image_blue.mimetype : null;
 
         // บันทึกข้อมูลผู้เล่นใหม่ลงฐานข้อมูลในตาราง sport_person
         const [result] = await db.query(
-            'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, image_red_mime, image_blue_mime, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO sport_person (sport_person_id, person_red, person_blue, image_red, image_blue, name_match, Role) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 sport_person_id,
                 person_red,
